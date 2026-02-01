@@ -1,4 +1,5 @@
 cmake
+Pillow
 pytesseract
 PyMuPDF
 python-docx
@@ -8,3 +9,5 @@ xlrd
 nltk
 rich
 python-pptx
+dash
+dash-bootstrap-components

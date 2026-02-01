@@ -180,10 +180,35 @@ pip install nexa Pillow pytesseract PyMuPDF python-docx
 
 With the environment activated and dependencies installed, run the script using:
 
-### 6. Running the Script🎉
+### 6. Running the Application 🎉
+
+#### Option 1: Web-based GUI (Recommended)
+Run the web-based graphical user interface:
+```zsh
+python gui.py
+```
+Then open your browser and navigate to `http://localhost:8050` to access the interactive dashboard.
+
+#### Option 2: Command Line Interface (CLI)
+Run the traditional command-line interface:
 ```zsh
 python main.py
 ```
+
+## Web GUI Features
+
+The web-based dashboard provides an intuitive interface for organizing your files:
+
+- **Easy Configuration**: Select input and output directories through a clean interface
+- **Multiple Organization Modes**:
+  - By Content (AI-powered): Uses AI to understand file content and organize intelligently
+  - By Date: Organizes files based on modification dates
+  - By Type: Groups files by their file extensions
+- **Real-time Progress**: View file processing progress and organizational suggestions in real-time
+- **Preview Before Action**: See the proposed directory structure before committing changes
+- **Dry Run Mode**: Test the organization without actually moving files
+- **Silent Mode**: Option to log all operations to a file
+- **Responsive Design**: Works on various screen sizes
 
 ## Notes
 
