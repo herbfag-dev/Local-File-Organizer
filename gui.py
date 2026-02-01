@@ -36,7 +36,8 @@ from output_filter import filter_specific_output
 NexaVLMInference = None
 NexaTextInference = None
 
-# Global variables for state management
+# Global variables for state management with thread safety
+state_lock = threading.Lock()
 app_state = {
     'operations': [],
     'image_inference': None,
@@ -119,17 +120,19 @@ def initialize_models():
 
 
 def add_log(message):
-    """Add a message to the log"""
+    """Add a message to the log (thread-safe)"""
     timestamp = datetime.now().strftime("%H:%M:%S")
-    app_state['log_messages'].append(f"[{timestamp}] {message}")
-    # Keep only last 500 messages
-    if len(app_state['log_messages']) > 500:
-        app_state['log_messages'] = app_state['log_messages'][-500:]
+    with state_lock:
+        app_state['log_messages'].append(f"[{timestamp}] {message}")
+        # Keep only last 500 messages
+        if len(app_state['log_messages']) > 500:
+            app_state['log_messages'] = app_state['log_messages'][-500:]
 
 
 def get_log_text():
-    """Get the current log as text"""
-    return "\n".join(app_state['log_messages'])
+    """Get the current log as text (thread-safe)"""
+    with state_lock:
+        return "\n".join(app_state['log_messages'])
 
 
 def simulate_directory_tree(operations, base_path):
@@ -285,9 +288,10 @@ def update_log(n):
     """Update the log output periodically"""
     log_text = get_log_text()
     
-    # Check if operations are ready
-    has_operations = len(app_state['operations']) > 0
-    is_processing = app_state['processing']
+    # Check if operations are ready (thread-safe)
+    with state_lock:
+        has_operations = len(app_state['operations']) > 0
+        is_processing = app_state['processing']
     
     # Status text
     if is_processing:
@@ -309,9 +313,10 @@ def update_log(n):
     prevent_initial_call=True
 )
 def clear_log(n_clicks):
-    """Clear the log"""
+    """Clear the log (thread-safe)"""
     if n_clicks:
-        app_state['log_messages'] = []
+        with state_lock:
+            app_state['log_messages'] = []
         return ""
     return no_update
 
@@ -342,7 +347,8 @@ def analyze_files(n_clicks, input_path, output_path, mode, silent_mode):
     # Run analysis in a separate thread
     def analyze_thread():
         try:
-            app_state['processing'] = True
+            with state_lock:
+                app_state['processing'] = True
             
             add_log("=" * 50)
             add_log(f"Starting analysis in {mode.upper()} mode")
@@ -362,7 +368,8 @@ def analyze_files(n_clicks, input_path, output_path, mode, silent_mode):
                 # Initialize models if needed
                 if not initialize_models():
                     add_log("Failed to initialize models. Aborting.")
-                    app_state['processing'] = False
+                    with state_lock:
+                        app_state['processing'] = False
                     return
                 
                 add_log("Processing files with AI (this may take a while)...")
@@ -381,10 +388,13 @@ def analyze_files(n_clicks, input_path, output_path, mode, silent_mode):
                 # Process files
                 log_file = 'operation_log.txt' if silent_mode else None
                 
-                data_images = process_image_files(image_files, app_state['image_inference'], 
-                                                  app_state['text_inference'], silent=silent_mode, 
-                                                  log_file=log_file)
-                data_texts = process_text_files(text_tuples, app_state['text_inference'], 
+                with state_lock:
+                    img_inf = app_state['image_inference']
+                    txt_inf = app_state['text_inference']
+                
+                data_images = process_image_files(image_files, img_inf, txt_inf,
+                                                  silent=silent_mode, log_file=log_file)
+                data_texts = process_text_files(text_tuples, txt_inf,
                                                silent=silent_mode, log_file=log_file)
                 
                 # Combine all data
@@ -393,37 +403,42 @@ def analyze_files(n_clicks, input_path, output_path, mode, silent_mode):
                 # Compute operations
                 renamed_files = set()
                 processed_files = set()
-                app_state['operations'] = compute_operations(all_data, output_path, 
+                operations = compute_operations(all_data, output_path, 
                                                              renamed_files, processed_files)
                 
             elif mode == 'date':
-                app_state['operations'] = process_files_by_date(
+                operations = process_files_by_date(
                     file_paths, output_path, dry_run=False, 
                     silent=silent_mode, 
                     log_file='operation_log.txt' if silent_mode else None
                 )
             elif mode == 'type':
-                app_state['operations'] = process_files_by_type(
+                operations = process_files_by_type(
                     file_paths, output_path, dry_run=False, 
                     silent=silent_mode, 
                     log_file='operation_log.txt' if silent_mode else None
                 )
             
+            # Store operations (thread-safe)
+            with state_lock:
+                app_state['operations'] = operations
+            
             # Show proposed structure
             add_log("-" * 50)
             add_log("Proposed directory structure:")
             add_log(os.path.abspath(output_path))
-            simulated_tree = simulate_directory_tree(app_state['operations'], output_path)
+            simulated_tree = simulate_directory_tree(operations, output_path)
             for line in format_tree(simulated_tree):
                 add_log(line)
             add_log("-" * 50)
-            add_log(f"Analysis complete! {len(app_state['operations'])} operations planned.")
+            add_log(f"Analysis complete! {len(operations)} operations planned.")
             add_log("Click 'Organize Files' to proceed with the changes.")
             
         except Exception as e:
             add_log(f"Error during analysis: {e}")
         finally:
-            app_state['processing'] = False
+            with state_lock:
+                app_state['processing'] = False
     
     thread = threading.Thread(target=analyze_thread)
     thread.daemon = True
@@ -446,7 +461,11 @@ def organize_files(n_clicks, output_path, input_path, dry_run, silent_mode):
     if not n_clicks:
         raise PreventUpdate
     
-    if not app_state['operations']:
+    # Check if operations exist (thread-safe)
+    with state_lock:
+        has_operations = len(app_state['operations']) > 0
+    
+    if not has_operations:
         add_log("Error: Please analyze files first")
         return False
     
@@ -457,7 +476,9 @@ def organize_files(n_clicks, output_path, input_path, dry_run, silent_mode):
     # Run organization in a separate thread
     def organize_thread():
         try:
-            app_state['processing'] = True
+            with state_lock:
+                app_state['processing'] = True
+                operations = app_state['operations'][:]  # Create a copy
             
             # Create output directory
             os.makedirs(output_path, exist_ok=True)
@@ -468,7 +489,7 @@ def organize_files(n_clicks, output_path, input_path, dry_run, silent_mode):
             
             # Execute operations
             execute_operations(
-                app_state['operations'],
+                operations,
                 dry_run=dry_run,
                 silent=silent_mode,
                 log_file='operation_log.txt' if silent_mode else None
@@ -484,7 +505,8 @@ def organize_files(n_clicks, output_path, input_path, dry_run, silent_mode):
         except Exception as e:
             add_log(f"Error during organization: {e}")
         finally:
-            app_state['processing'] = False
+            with state_lock:
+                app_state['processing'] = False
     
     thread = threading.Thread(target=organize_thread)
     thread.daemon = True
@@ -504,8 +526,10 @@ def main():
     print("Open your browser and navigate to: http://localhost:8050")
     print("Press Ctrl+C to stop the server")
     print("=" * 60)
+    print("NOTE: Server is bound to localhost for security.")
+    print("=" * 60)
     
-    app.run(debug=False, host='0.0.0.0', port=8050)
+    app.run(debug=False, host='127.0.0.1', port=8050)
 
 
 if __name__ == '__main__':
