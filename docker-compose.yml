@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  file-organizer:
+    build: .
+    container_name: local-file-organizer
+    volumes:
+      # Mount your input directory
+      - ./input:/data/input
+      # Mount your output directory
+      - ./output:/data/output
+      # Optional: Mount for model cache to avoid re-downloading
+      - ~/.cache/nexa:/root/.cache/nexa
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python main.py
+
+# Usage:
+# 1. Place your files to organize in ./input directory
+# 2. Run: docker-compose up
+# 3. Follow the interactive prompts
+# 4. Organized files will appear in ./output directory
