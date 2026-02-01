@@ -34,6 +34,11 @@ from copilot_mode import (
     apply_copilot_rules
 )
 
+from organizational_methods import (
+    list_methods,
+    apply_organizational_method
+)
+
 from output_filter import filter_specific_output  # Import the context manager
 from nexa.gguf import NexaVLMInference, NexaTextInference  # Import model classes
 
@@ -251,6 +256,34 @@ def main():
                 print("Invalid choice. Please enter 1, 2, or 3.")
     else:
         duplicate_strategy = None
+    
+    # Ask about organizational methodology
+    print("-" * 50)
+    print("**NOTE: You can apply organizational best practices to your file structure.")
+    use_org_method = get_yes_no("Would you like to use an organizational methodology? (yes/no): ")
+    if use_org_method:
+        print("\nAvailable organizational methods:")
+        methods = list_methods()
+        for i, method in enumerate(methods, 1):
+            print(f"{i}. {method['name']}: {method['description']}")
+        
+        while True:
+            org_choice = input(f"Enter 1-{len(methods)} (or 'skip' to proceed without): ").strip()
+            if org_choice.lower() == 'skip':
+                organizational_method = None
+                break
+            try:
+                choice_idx = int(org_choice) - 1
+                if 0 <= choice_idx < len(methods):
+                    organizational_method = methods[choice_idx]['key']
+                    print(f"Selected: {methods[choice_idx]['name']}")
+                    break
+                else:
+                    print(f"Invalid choice. Please enter 1-{len(methods)} or 'skip'.")
+            except ValueError:
+                print(f"Invalid input. Please enter 1-{len(methods)} or 'skip'.")
+    else:
+        organizational_method = None
 
     while True:
         # Paths configuration
@@ -423,6 +456,32 @@ def main():
                         silent=silent_mode,
                         log_file=log_file
                     )
+            
+            # Apply organizational methodology if selected
+            if organizational_method and mode not in ['copilot']:
+                if not silent_mode:
+                    print("-" * 50)
+                    print(f"Applying {organizational_method} organizational methodology...")
+                
+                # Extract source files and create metadata dict if available
+                source_files = [op['source'] for op in operations]
+                metadata_dict = {}
+                
+                # For content mode, we have metadata
+                if mode == 'content':
+                    for data in all_data:
+                        metadata_dict[data['file_path']] = {
+                            'foldername': data['foldername'],
+                            'filename': data['filename']
+                        }
+                
+                # Recompute operations with organizational method
+                operations = apply_organizational_method(
+                    source_files,
+                    output_path,
+                    organizational_method,
+                    metadata_dict=metadata_dict if metadata_dict else None
+                )
 
             # Simulate and display the proposed directory tree
             print("-" * 50)
