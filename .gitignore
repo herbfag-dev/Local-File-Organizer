@@ -27,3 +27,7 @@ operation_log.txt
 assets/
 reflex.db
 alembic/
+.states/
+
+# Test files
+test_input/
