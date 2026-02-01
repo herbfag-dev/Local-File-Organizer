@@ -1,5 +1,6 @@
 import os
 import time
+import argparse
 
 from file_utils import (
     display_directory_tree,
@@ -42,13 +43,13 @@ def ensure_nltk_data():
 image_inference = None
 text_inference = None
 
-def initialize_models():
+def initialize_models(image_model_path=None, text_model_path=None):
     """Initialize the models if they haven't been initialized yet."""
     global image_inference, text_inference
     if image_inference is None or text_inference is None:
-        # Initialize the models
-        model_path = "llava-v1.6-vicuna-7b:q4_0"
-        model_path_text = "Llama3.2-3B-Instruct:q3_K_M"
+        # Initialize the models with default or provided paths
+        model_path = image_model_path or "llava-v1.6-vicuna-7b:q4_0"
+        model_path_text = text_model_path or "Llama3.2-3B-Instruct:q3_K_M"
 
         # Use the filter_specific_output context manager
         with filter_specific_output():
@@ -79,8 +80,9 @@ def initialize_models():
 
             )
         print("**----------------------------------------------**")
-        print("**       Image inference model initialized      **")
-        print("**       Text inference model initialized       **")
+        print(f"**   Image model: {model_path}")
+        print(f"**   Text model: {model_path_text}")
+        print("**   Models initialized successfully           **")
         print("**----------------------------------------------**")
 
 def simulate_directory_tree(operations, base_path):
@@ -139,7 +141,67 @@ def get_mode_selection():
         else:
             print("Invalid selection. Please enter 1, 2, or 3. To exit, type '/exit'.")
 
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Local File Organizer - AI-powered file organization',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python main.py
+  python main.py --text-model "Llama3.2-1B-Instruct:q4_0"
+  python main.py --image-model "llava-v1.6-vicuna-7b:q4_0" --text-model "Llama3.2-3B-Instruct:q3_K_M"
+  python main.py --list-models
+
+Available model examples:
+  Text models: Llama3.2-1B-Instruct:q4_0, Llama3.2-3B-Instruct:q3_K_M, gemma-2-2b-instruct:q4_0
+  Image models: llava-v1.6-vicuna-7b:q4_0, llava-phi-3-mini:q4_0
+        """
+    )
+    
+    parser.add_argument(
+        '--text-model',
+        type=str,
+        default=None,
+        help='Text inference model path (default: Llama3.2-3B-Instruct:q3_K_M)'
+    )
+    
+    parser.add_argument(
+        '--image-model',
+        type=str,
+        default=None,
+        help='Image inference model path (default: llava-v1.6-vicuna-7b:q4_0)'
+    )
+    
+    parser.add_argument(
+        '--list-models',
+        action='store_true',
+        help='List available model examples and exit'
+    )
+    
+    return parser.parse_args()
+
 def main():
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    # If --list-models flag is set, display model info and exit
+    if args.list_models:
+        print("=" * 60)
+        print("Available Model Examples")
+        print("=" * 60)
+        print("\nText Models (for text analysis and categorization):")
+        print("  - Llama3.2-1B-Instruct:q4_0 (smaller, faster)")
+        print("  - Llama3.2-3B-Instruct:q3_K_M (default, balanced)")
+        print("  - gemma-2-2b-instruct:q4_0 (alternative)")
+        print("\nImage Models (for image description and analysis):")
+        print("  - llava-v1.6-vicuna-7b:q4_0 (default)")
+        print("  - llava-phi-3-mini:q4_0 (smaller, faster)")
+        print("\nNote: Models will be downloaded automatically on first use.")
+        print("Visit https://nexaai.com for more models.")
+        print("=" * 60)
+        return
+    
     # Ensure NLTK data is downloaded efficiently and quietly
     ensure_nltk_data()
 
@@ -249,7 +311,7 @@ def main():
                 # Initialize models once
                 if not silent_mode:
                     print("Checking if the model is already downloaded. If not, downloading it now.")
-                initialize_models()
+                initialize_models(image_model_path=args.image_model, text_model_path=args.text_model)
 
                 if not silent_mode:
                     print("*" * 50)
