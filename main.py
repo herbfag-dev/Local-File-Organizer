@@ -29,6 +29,11 @@ from duplicate_checker import (
     handle_duplicates_in_operations
 )
 
+from copilot_mode import (
+    CopilotMode,
+    apply_copilot_rules
+)
+
 from output_filter import filter_specific_output  # Import the context manager
 from nexa.gguf import NexaVLMInference, NexaTextInference  # Import model classes
 
@@ -125,10 +130,11 @@ def get_mode_selection():
     """Prompt the user to select a mode."""
     while True:
         print("Please choose the mode to organize your files:")
-        print("1. By Content")
+        print("1. By Content (AI-powered)")
         print("2. By Date")
         print("3. By Type")
-        response = input("Enter 1, 2, or 3 (or type '/exit' to exit): ").strip()
+        print("4. Copilot Mode (Interactive AI assistant)")
+        response = input("Enter 1, 2, 3, or 4 (or type '/exit' to exit): ").strip()
         if response == '/exit':
             print("Exiting program.")
             exit()
@@ -138,6 +144,10 @@ def get_mode_selection():
             return 'date'
         elif response == '3':
             return 'type'
+        elif response == '4':
+            return 'copilot'
+        else:
+            print("Invalid selection. Please enter 1, 2, 3, or 4. To exit, type '/exit'.")
         else:
             print("Invalid selection. Please enter 1, 2, or 3. To exit, type '/exit'.")
 
@@ -371,6 +381,26 @@ def main():
             elif mode == 'type':
                 # Process files by type
                 operations = process_files_by_type(file_paths, output_path, dry_run=False, silent=silent_mode, log_file=log_file)
+            elif mode == 'copilot':
+                # Copilot mode - interactive AI assistant
+                # Initialize models for copilot mode
+                if not silent_mode:
+                    print("Initializing AI for copilot mode...")
+                initialize_models(image_model_path=args.image_model, text_model_path=args.text_model)
+                
+                # Create copilot instance
+                copilot = CopilotMode(text_inference, silent=silent_mode, log_file=log_file)
+                
+                # Run interactive session
+                custom_instructions = copilot.run_interactive_session(file_paths)
+                
+                if custom_instructions is None:
+                    # User exited copilot mode
+                    print("Copilot mode canceled.")
+                    continue  # Go back to mode selection
+                
+                # Apply custom rules
+                operations = apply_copilot_rules(custom_instructions, output_path)
             else:
                 print("Invalid mode selected.")
                 return
