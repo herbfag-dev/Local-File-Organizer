@@ -7,7 +7,6 @@ import reflex as rx
 import os
 import sys
 import time
-import asyncio
 from typing import List, Dict, Optional
 from pathlib import Path
 
@@ -40,6 +39,10 @@ except ImportError:
     NEXA_AVAILABLE = False
     NexaVLMInference = None
     NexaTextInference = None
+
+# Model configuration constants
+DEFAULT_IMAGE_MODEL = "llava-v1.6-vicuna-7b:q4_0"
+DEFAULT_TEXT_MODEL = "Llama3.2-3B-Instruct:q3_K_M"
 
 
 class State(rx.State):
@@ -83,6 +86,11 @@ class State(rx.State):
     # Model references (not serializable, so we'll handle them separately)
     _image_inference = None
     _text_inference = None
+    
+    @rx.var
+    def operations_count(self) -> int:
+        """Get the number of operations."""
+        return len(self.operations)
     
     def add_log(self, message: str):
         """Add a log message."""
@@ -154,12 +162,9 @@ class State(rx.State):
         self.processing_status = "Initializing models..."
         
         try:
-            model_path = "llava-v1.6-vicuna-7b:q4_0"
-            model_path_text = "Llama3.2-3B-Instruct:q3_K_M"
-            
             # Initialize models (this is synchronous in the actual implementation)
             self._image_inference = NexaVLMInference(
-                model_path=model_path,
+                model_path=DEFAULT_IMAGE_MODEL,
                 local_path=None,
                 stop_words=[],
                 temperature=0.3,
@@ -170,7 +175,7 @@ class State(rx.State):
             )
             
             self._text_inference = NexaTextInference(
-                model_path=model_path_text,
+                model_path=DEFAULT_TEXT_MODEL,
                 local_path=None,
                 stop_words=[],
                 temperature=0.5,
@@ -519,7 +524,7 @@ def preview_section() -> rx.Component:
                         size="3",
                         disabled=State.is_processing,
                     ),
-                    rx.text(State.operations.length(), " operations pending"),
+                    rx.text(State.operations_count, " operations pending"),
                     spacing="3",
                 ),
                 spacing="3",
@@ -595,8 +600,8 @@ def settings_panel() -> rx.Component:
                     rx.divider(),
                     rx.vstack(
                         rx.heading("Model Configuration", size="4"),
-                        rx.text("Image Model: llava-v1.6-vicuna-7b:q4_0", size="2"),
-                        rx.text("Text Model: Llama3.2-3B-Instruct:q3_K_M", size="2"),
+                        rx.text(f"Image Model: {DEFAULT_IMAGE_MODEL}", size="2"),
+                        rx.text(f"Text Model: {DEFAULT_TEXT_MODEL}", size="2"),
                         rx.divider(),
                         rx.heading("Processing Options", size="4"),
                         rx.switch(
