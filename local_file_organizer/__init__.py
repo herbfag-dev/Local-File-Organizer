@@ -1,5 +1,5 @@
 """Local File Organizer Reflex Application Package."""
 
-from .reflex_app import app
+from .local_file_organizer import app
 
 __all__ = ["app"]

@@ -31,7 +31,15 @@ from data_processing_common import (
 from text_data_processing import process_text_files
 from image_data_processing import process_image_files
 from output_filter import filter_specific_output
-from nexa.gguf import NexaVLMInference, NexaTextInference
+
+# Try to import Nexa models, but make them optional for GUI startup
+try:
+    from nexa.gguf import NexaVLMInference, NexaTextInference
+    NEXA_AVAILABLE = True
+except ImportError:
+    NEXA_AVAILABLE = False
+    NexaVLMInference = None
+    NexaTextInference = None
 
 
 class State(rx.State):
@@ -46,7 +54,7 @@ class State(rx.State):
     
     # Processing state
     is_processing: bool = False
-    processing_progress: float = 0.0
+    processing_progress: int = 0
     processing_status: str = ""
     
     # File lists
@@ -114,6 +122,11 @@ class State(rx.State):
         """Toggle settings panel."""
         self.show_settings = not self.show_settings
     
+    def set_silent_mode(self, value: bool):
+        """Set silent mode."""
+        self.silent_mode = value
+        self.add_log(f"Silent mode: {'enabled' if value else 'disabled'}")
+    
     def load_files(self):
         """Load files from input path."""
         if not os.path.exists(self.input_path):
@@ -130,6 +143,11 @@ class State(rx.State):
     async def initialize_models(self):
         """Initialize AI models."""
         if self.models_initialized:
+            return
+        
+        if not NEXA_AVAILABLE:
+            self.add_log("✗ Nexa SDK not available. Please install it to use content mode.")
+            self.processing_status = "Nexa SDK not installed"
             return
         
         self.add_log("Initializing AI models...")
@@ -180,7 +198,7 @@ class State(rx.State):
             return
         
         self.is_processing = True
-        self.processing_progress = 0.0
+        self.processing_progress = 0
         self.processing_status = "Starting..."
         self.clear_logs()
         self.add_log(f"Starting file organization in '{self.selected_mode}' mode")
@@ -200,16 +218,26 @@ class State(rx.State):
             self.add_log(f"✗ Error during processing: {str(e)}")
         finally:
             self.is_processing = False
-            self.processing_progress = 100.0
+            self.processing_progress = 100
     
     async def process_content_mode(self):
         """Process files using content analysis."""
+        # Check if Nexa is available
+        if not NEXA_AVAILABLE:
+            self.add_log("✗ Content mode requires Nexa SDK. Please install it first.")
+            self.processing_status = "Nexa SDK required"
+            return
+        
         # Initialize models if needed
         if not self.models_initialized:
             await self.initialize_models()
         
+        if not self.models_initialized:
+            self.add_log("✗ Cannot proceed without initialized models")
+            return
+        
         self.processing_status = "Analyzing files..."
-        self.processing_progress = 10.0
+        self.processing_progress = 10
         
         # Separate files by type
         image_files, text_files = separate_files_by_type(self.file_list)
@@ -217,7 +245,7 @@ class State(rx.State):
         
         # Process text files
         self.processing_status = "Processing text files..."
-        self.processing_progress = 30.0
+        self.processing_progress = 30
         text_tuples = []
         for fp in text_files:
             text_content = read_file_data(fp)
@@ -233,7 +261,7 @@ class State(rx.State):
         
         # Process image files
         self.processing_status = "Processing images..."
-        self.processing_progress = 60.0
+        self.processing_progress = 60
         data_images = process_image_files(
             image_files, 
             self._image_inference, 
@@ -244,7 +272,7 @@ class State(rx.State):
         
         # Compute operations
         self.processing_status = "Computing operations..."
-        self.processing_progress = 80.0
+        self.processing_progress = 80
         all_data = data_images + data_texts
         renamed_files = set()
         processed_files = set()
@@ -262,7 +290,7 @@ class State(rx.State):
     async def process_date_mode(self):
         """Process files by date."""
         self.processing_status = "Organizing by date..."
-        self.processing_progress = 50.0
+        self.processing_progress = 50
         
         self.operations = process_files_by_date(
             self.file_list,
@@ -278,7 +306,7 @@ class State(rx.State):
     async def process_type_mode(self):
         """Process files by type."""
         self.processing_status = "Organizing by type..."
-        self.processing_progress = 50.0
+        self.processing_progress = 50
         
         self.operations = process_files_by_type(
             self.file_list,
@@ -332,7 +360,7 @@ class State(rx.State):
         
         self.is_processing = True
         self.processing_status = "Executing operations..."
-        self.processing_progress = 0.0
+        self.processing_progress = 0
         
         try:
             os.makedirs(self.output_path, exist_ok=True)
@@ -349,7 +377,7 @@ class State(rx.State):
             self.processing_status = f"Error: {str(e)}"
         finally:
             self.is_processing = False
-            self.processing_progress = 100.0
+            self.processing_progress = 100
 
 
 def header() -> rx.Component:
@@ -481,7 +509,6 @@ def preview_section() -> rx.Component:
                 rx.text("Proposed directory structure:", weight="bold", size="2"),
                 rx.code_block(
                     State.simulated_tree,
-                    language="text",
                     width="100%",
                 ),
                 rx.hstack(
@@ -492,7 +519,7 @@ def preview_section() -> rx.Component:
                         size="3",
                         disabled=State.is_processing,
                     ),
-                    rx.text(f"{len(State.operations)} operations pending"),
+                    rx.text(State.operations.length(), " operations pending"),
                     spacing="3",
                 ),
                 spacing="3",
@@ -574,7 +601,7 @@ def settings_panel() -> rx.Component:
                         rx.heading("Processing Options", size="4"),
                         rx.switch(
                             checked=State.silent_mode,
-                            on_change=lambda v: State.set_value("silent_mode", v),
+                            on_change=State.set_silent_mode,
                         ),
                         rx.text("Silent Mode", size="2"),
                         spacing="3",

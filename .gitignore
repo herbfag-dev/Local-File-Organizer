@@ -1,3 +1,7 @@
+.states
+.web
+assets/external/
+*.db
 # Byte-compiled Python files
 __pycache__/
 *.py[cod]
