@@ -8,12 +8,15 @@ import docx
 import pandas as pd  # Import pandas to read Excel and CSV files
 from pptx import Presentation  # Import Presentation for PPT files
 
+# Configuration constants
+MAX_TEXT_CHARS = 3000  # Maximum characters to read from text files
+EBOOK_TEXT_LIMIT = 5000  # Maximum characters to read from ebook files
+
 def read_text_file(file_path):
     """Read text content from a text file."""
-    max_chars = 3000  # Limit processing time
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-            text = file.read(max_chars)
+            text = file.read(MAX_TEXT_CHARS)
         return text
     except Exception as e:
         print(f"Error reading text file {file_path}: {e}")
@@ -88,7 +91,7 @@ def read_ebook_file(file_path):
                 if item.get_type() == ebooklib.ITEM_DOCUMENT:
                     soup = BeautifulSoup(item.get_content(), 'html.parser')
                     full_text.append(soup.get_text())
-            return '\n'.join(full_text)[:5000]  # Limit to first 5000 chars
+            return '\n'.join(full_text)[:EBOOK_TEXT_LIMIT]
         else:
             # For .mobi, .azw, .azw3, we need specialized libraries
             # For now, return None as these require additional dependencies

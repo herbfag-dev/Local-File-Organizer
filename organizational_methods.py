@@ -140,8 +140,12 @@ class PARAMethod(OrganizationalMethod):
         if any(word in basename for word in ['project', 'proposal', 'plan', 'draft']):
             return "1-Projects/Active"
         
-        # Check for archive indicators
-        if any(word in basename for word in ['old', 'backup', 'archive', '2020', '2021', '2022']):
+        # Check for archive indicators (old files or specific archive keywords)
+        # Consider files with years older than 3 years as potential archives
+        current_year = datetime.now().year
+        archive_years = [str(year) for year in range(current_year - 5, current_year - 2)]
+        archive_keywords = ['old', 'backup', 'archive'] + archive_years
+        if any(word in basename for word in archive_keywords):
             return "4-Archives"
         
         # Check metadata if available
@@ -247,7 +251,7 @@ class LATCHMethod(OrganizationalMethod):
         try:
             mod_time = os.path.getmtime(file_path)
             year = datetime.fromtimestamp(mod_time).strftime('%Y')
-        except:
+        except (OSError, ValueError):
             year = 'Unknown'
         
         # Category-based organization with time hierarchy

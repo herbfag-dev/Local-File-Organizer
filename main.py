@@ -153,8 +153,6 @@ def get_mode_selection():
             return 'copilot'
         else:
             print("Invalid selection. Please enter 1, 2, 3, or 4. To exit, type '/exit'.")
-        else:
-            print("Invalid selection. Please enter 1, 2, or 3. To exit, type '/exit'.")
 
 def parse_arguments():
     """Parse command line arguments."""
