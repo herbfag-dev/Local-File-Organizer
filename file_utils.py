@@ -72,6 +72,35 @@ def read_ppt_file(file_path):
         print(f"Error reading PowerPoint file {file_path}: {e}")
         return None
 
+def read_ebook_file(file_path):
+    """Read text content from an ebook file (.epub, .mobi, .azw, .azw3)."""
+    try:
+        import ebooklib
+        from ebooklib import epub
+        from bs4 import BeautifulSoup
+        
+        ext = os.path.splitext(file_path.lower())[1]
+        
+        if ext == '.epub':
+            book = epub.read_epub(file_path)
+            full_text = []
+            for item in book.get_items():
+                if item.get_type() == ebooklib.ITEM_DOCUMENT:
+                    soup = BeautifulSoup(item.get_content(), 'html.parser')
+                    full_text.append(soup.get_text())
+            return '\n'.join(full_text)[:5000]  # Limit to first 5000 chars
+        else:
+            # For .mobi, .azw, .azw3, we need specialized libraries
+            # For now, return None as these require additional dependencies
+            print(f"Note: {ext} format requires additional processing. File: {file_path}")
+            return None
+    except ImportError:
+        print(f"Note: ebooklib and beautifulsoup4 required for ebook support. Install with: pip install ebooklib beautifulsoup4")
+        return None
+    except Exception as e:
+        print(f"Error reading ebook file {file_path}: {e}")
+        return None
+
 def read_file_data(file_path):
     """Read content from a file based on its extension."""
     ext = os.path.splitext(file_path.lower())[1]
@@ -85,6 +114,8 @@ def read_file_data(file_path):
         return read_spreadsheet_file(file_path)
     elif ext in ['.ppt', '.pptx']:
         return read_ppt_file(file_path)
+    elif ext in ['.epub', '.mobi', '.azw', '.azw3']:
+        return read_ebook_file(file_path)
     else:
         return None  # Unsupported file type
 
@@ -120,10 +151,14 @@ def collect_file_paths(base_path):
 def separate_files_by_type(file_paths):
     """Separate files into images and text files based on their extensions."""
     image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')
-    text_extensions = ('.txt', '.docx', '.doc', '.pdf', '.md', '.xls', '.xlsx', '.ppt', '.pptx', '.csv')
+    text_extensions = ('.txt', '.docx', '.doc', '.pdf', '.md', '.xls', '.xlsx', '.ppt', '.pptx', '.csv', 
+                       '.epub', '.mobi', '.azw', '.azw3')  # Added ebook formats
+    audio_extensions = ('.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.wma')
+    video_extensions = ('.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.mpeg', '.mpg')
+    
     image_files = [fp for fp in file_paths if os.path.splitext(fp.lower())[1] in image_extensions]
     text_files = [fp for fp in file_paths if os.path.splitext(fp.lower())[1] in text_extensions]
+    audio_files = [fp for fp in file_paths if os.path.splitext(fp.lower())[1] in audio_extensions]
+    video_files = [fp for fp in file_paths if os.path.splitext(fp.lower())[1] in video_extensions]
 
-    return image_files, text_files  # Return only two values
-
-# TODO:ebook: '.mobi', '.azw', '.azw3', '.epub',
+    return image_files, text_files, audio_files, video_files

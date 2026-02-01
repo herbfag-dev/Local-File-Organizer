@@ -8,3 +8,5 @@ xlrd
 nltk
 rich
 python-pptx
+ebooklib
+beautifulsoup4

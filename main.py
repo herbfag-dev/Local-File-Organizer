@@ -230,7 +230,14 @@ def main():
                 link_type_counts = {'hardlink': 0, 'symlink': 0}
 
                 # Separate files by type
-                image_files, text_files = separate_files_by_type(file_paths)
+                image_files, text_files, audio_files, video_files = separate_files_by_type(file_paths)
+                
+                # Note about audio/video files in content mode
+                if (audio_files or video_files) and not silent_mode:
+                    print("*" * 50)
+                    print("Note: Audio and video files will be organized by type/date only.")
+                    print("Content-based organization is not available for multimedia files.")
+                    print("*" * 50)
 
                 # Prepare text tuples for processing
                 text_tuples = []

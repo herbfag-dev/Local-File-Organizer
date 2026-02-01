@@ -64,7 +64,10 @@ def process_files_by_type(file_paths, output_path, dry_run=False, silent=False, 
 
     # Define extensions
     image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')
-    text_extensions = ('.txt', '.md', '.docx', '.doc', '.pdf', '.xls', '.xlsx', '.epub', '.mobi', '.azw', '.azw3')
+    text_extensions = ('.txt', '.md', '.docx', '.doc', '.pdf', '.xls', '.xlsx')
+    ebook_extensions = ('.epub', '.mobi', '.azw', '.azw3')
+    audio_extensions = ('.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.wma')
+    video_extensions = ('.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.mpeg', '.mpg')
 
     for file_path in file_paths:
         # Exclude hidden files (additional safety)
@@ -93,11 +96,21 @@ def process_files_by_type(file_paths, output_path, dry_run=False, silent=False, 
                 sub_folder = 'pdf_files'
             elif ext in ('.xls', '.xlsx'):
                 sub_folder = 'xls_files'
-            elif ext in ('.epub', '.mobi', '.azw', '.azw3'):
-                sub_folder = 'ebooks'
             else:
                 sub_folder = 'others'
             folder_name = os.path.join(top_folder, sub_folder)
+
+        elif ext in ebook_extensions:
+            # Ebook files
+            folder_name = os.path.join('text_files', 'ebooks')
+
+        elif ext in audio_extensions:
+            # Audio files
+            folder_name = 'audio_files'
+
+        elif ext in video_extensions:
+            # Video files
+            folder_name = 'video_files'
 
         else:
             # Other types
