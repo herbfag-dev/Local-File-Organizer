@@ -23,6 +23,11 @@ from image_data_processing import (
     process_image_files
 )
 
+from duplicate_checker import (
+    find_duplicates,
+    handle_duplicates_in_operations
+)
+
 from output_filter import filter_specific_output  # Import the context manager
 from nexa.gguf import NexaVLMInference, NexaTextInference  # Import model classes
 
@@ -149,6 +154,31 @@ def main():
         log_file = 'operation_log.txt'
     else:
         log_file = None
+    
+    # Ask about duplicate checking
+    print("-" * 50)
+    print("**NOTE: Duplicate checking will detect files with identical content.")
+    check_duplicates = get_yes_no("Would you like to check for duplicate files? (yes/no): ")
+    if check_duplicates:
+        print("How should duplicates be handled?")
+        print("1. Keep first occurrence only")
+        print("2. Keep all duplicates with unique names")
+        print("3. Skip all duplicates")
+        while True:
+            dup_choice = input("Enter 1, 2, or 3: ").strip()
+            if dup_choice == '1':
+                duplicate_strategy = 'keep_first'
+                break
+            elif dup_choice == '2':
+                duplicate_strategy = 'keep_all'
+                break
+            elif dup_choice == '3':
+                duplicate_strategy = 'skip_duplicates'
+                break
+            else:
+                print("Invalid choice. Please enter 1, 2, or 3.")
+    else:
+        duplicate_strategy = None
 
     while True:
         # Paths configuration
@@ -282,6 +312,25 @@ def main():
             else:
                 print("Invalid mode selected.")
                 return
+
+            # Handle duplicate checking if enabled
+            if check_duplicates and duplicate_strategy:
+                if not silent_mode:
+                    print("-" * 50)
+                    print("Checking for duplicate files...")
+                
+                # Find duplicates among source files
+                source_files = [op['source'] for op in operations]
+                duplicates = find_duplicates(source_files, silent=silent_mode, log_file=log_file)
+                
+                # Apply duplicate handling strategy
+                if duplicates:
+                    operations = handle_duplicates_in_operations(
+                        operations, 
+                        duplicate_strategy=duplicate_strategy,
+                        silent=silent_mode,
+                        log_file=log_file
+                    )
 
             # Simulate and display the proposed directory tree
             print("-" * 50)
