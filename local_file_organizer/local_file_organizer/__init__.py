@@ -3,25 +3,34 @@
 import reflex as rx
 from typing import List, Dict, Optional
 import os
+import sys
 import asyncio
 from pathlib import Path
 
+# Add parent directory to path to import modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Import existing functionality
-from file_utils import (
-    collect_file_paths,
-    separate_files_by_type,
-    read_file_data
-)
-from data_processing_common import (
-    compute_operations,
-    execute_operations,
-    process_files_by_date,
-    process_files_by_type,
-)
-from text_data_processing import process_text_files
-from image_data_processing import process_image_files
-from output_filter import filter_specific_output
-from nexa.gguf import NexaVLMInference, NexaTextInference
+try:
+    from file_utils import (
+        collect_file_paths,
+        separate_files_by_type,
+        read_file_data
+    )
+    from data_processing_common import (
+        compute_operations,
+        execute_operations,
+        process_files_by_date,
+        process_files_by_type,
+    )
+    from text_data_processing import process_text_files
+    from image_data_processing import process_image_files
+    from output_filter import filter_specific_output
+    from nexa.gguf import NexaVLMInference, NexaTextInference
+    MODELS_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import all modules: {e}")
+    MODELS_AVAILABLE = False
 
 
 class FileOrganizerState(rx.State):
@@ -447,7 +456,7 @@ def step_indicator() -> rx.Component:
         {"num": 1, "title": "Select Directory", "icon": "folder"},
         {"num": 2, "title": "Choose Mode", "icon": "settings"},
         {"num": 3, "title": "Preview", "icon": "eye"},
-        {"num": 4, "title": "Complete", "icon": "check-circle"},
+        {"num": 4, "title": "Complete", "icon": "circle-check"},
     ]
     
     return rx.box(
@@ -583,7 +592,7 @@ def step_1_select_directory() -> rx.Component:
             FileOrganizerState.status_message != "",
             rx.box(
                 rx.hstack(
-                    rx.icon("check-circle", size=20, color="#10b981"),
+                    rx.icon("circle-check", size=20, color="#10b981"),
                     rx.text(FileOrganizerState.status_message, size="2", color="#059669"),
                     spacing="2",
                 ),
@@ -598,7 +607,7 @@ def step_1_select_directory() -> rx.Component:
             FileOrganizerState.error_message != "",
             rx.box(
                 rx.hstack(
-                    rx.icon("alert-circle", size=20, color="#ef4444"),
+                    rx.icon("circle-alert", size=20, color="#ef4444"),
                     rx.text(FileOrganizerState.error_message, size="2", color="#dc2626"),
                     spacing="2",
                 ),
@@ -713,7 +722,7 @@ def step_2_choose_mode() -> rx.Component:
                 ["By extension", "Simple structure", "Instant results"]
             ),
             
-            columns=["1", "2", "3"],
+            columns=rx.breakpoints(initial="1", sm="2", md="3"),
             spacing="4",
             width="100%",
         ),
@@ -723,7 +732,7 @@ def step_2_choose_mode() -> rx.Component:
             FileOrganizerState.status_message != "",
             rx.box(
                 rx.hstack(
-                    rx.icon("check-circle", size=20, color="#10b981"),
+                    rx.icon("circle-check", size=20, color="#10b981"),
                     rx.text(FileOrganizerState.status_message, size="2", color="#059669"),
                     spacing="2",
                 ),
@@ -768,7 +777,7 @@ def step_2_choose_mode() -> rx.Component:
                 padding="0.75rem 2rem",
             ),
             rx.button(
-                rx.icon("wand-2", margin_right="0.5rem"),
+                rx.icon("wand", margin_right="0.5rem"),
                 "Organize Files",
                 size="3",
                 on_click=FileOrganizerState.organize_files,
@@ -781,7 +790,7 @@ def step_2_choose_mode() -> rx.Component:
                 _hover={"transform": "translateY(-2px)", "box_shadow": "0 10px 15px -3px rgba(102, 126, 234, 0.3)"},
                 transition="all 0.3s ease",
             ),
-            justify="space-between",
+            justify="between",
             width="100%",
             padding_top="1rem",
         ),
@@ -867,10 +876,10 @@ def step_3_preview() -> rx.Component:
         
         # Stats
         rx.grid(
-            stat_card("Files to Organize", str(FileOrganizerState.total_files), "files", "#8b5cf6"),
-            stat_card("Operations", str(len(FileOrganizerState.operations)), "git-branch", "#06b6d4"),
+            stat_card("Files to Organize", FileOrganizerState.total_files, "files", "#8b5cf6"),
+            stat_card("Operations", FileOrganizerState.operations.length(), "git-branch", "#06b6d4"),
             stat_card("Mode", FileOrganizerState.organization_mode.capitalize(), "settings", "#f59e0b"),
-            columns=["1", "3"],
+            columns=rx.breakpoints(initial="1", md="3"),
             spacing="4",
             width="100%",
         ),
@@ -884,15 +893,20 @@ def step_3_preview() -> rx.Component:
                     spacing="2",
                 ),
                 rx.box(
-                    rx.code_block(
+                    rx.text(
                         FileOrganizerState.proposed_structure,
-                        language="text",
-                        can_copy=True,
+                        font_family="monospace",
+                        white_space="pre",
+                        size="2",
                         width="100%",
                     ),
                     max_height="400px",
                     overflow_y="auto",
                     width="100%",
+                    padding="1rem",
+                    background="#f8f9fa",
+                    border_radius="8px",
+                    border="1px solid #e2e8f0",
                 ),
                 spacing="4",
                 width="100%",
@@ -950,7 +964,7 @@ def step_3_preview() -> rx.Component:
                 _hover={"transform": "translateY(-2px)", "box_shadow": "0 10px 15px -3px rgba(16, 185, 129, 0.3)"},
                 transition="all 0.3s ease",
             ),
-            justify="space-between",
+            justify="between",
             width="100%",
             padding_top="1rem",
         ),
@@ -997,7 +1011,7 @@ def step_4_complete() -> rx.Component:
             rx.vstack(
                 rx.box(
                     rx.icon(
-                        "check-circle",
+                        "circle-check",
                         size=64,
                         color="#10b981",
                     ),

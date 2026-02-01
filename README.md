@@ -2,6 +2,27 @@
 
 Tired of digital clutter? Overwhelmed by disorganized files scattered across your computer? Let AI do the heavy lifting! The Local File Organizer is your personal organizing assistant, using cutting-edge AI to bring order to your file chaos - all while respecting your privacy.
 
+## 🎨 New: Beautiful Web GUI
+
+**Now with a stunning, modern web interface!** Enjoy a visual, intuitive experience with our new Reflex-based GUI featuring Material Design principles.
+
+![GUI Screenshot](https://github.com/user-attachments/assets/9c51fb66-0f86-4df7-aa5a-13976f8ad094)
+
+### Quick Start with GUI
+```bash
+reflex run
+```
+Then open http://localhost:3000 in your browser!
+
+📖 **[See Full GUI Documentation](GUI_README.md)**
+
+### Key GUI Features
+- ✨ **Beautiful Material Design** interface with smooth animations
+- 📱 **Fully Responsive** - works on desktop, tablet, and mobile
+- 🎯 **Step-by-Step Workflow** with visual progress indicators
+- 👁️ **Preview Before Action** - see the proposed structure before committing
+- 🔒 **100% Privacy** - all processing happens locally
+
 ## How It Works 💡
 
 Before:
@@ -50,6 +71,15 @@ After:
 ```
 
 ## Updates 🚀
+
+**[2025/02] v0.0.3 - Beautiful Web GUI**:
+* 🎨 **New Web-based GUI** with Material Design-inspired interface
+* 📱 **Responsive Design** - works seamlessly on all devices
+* ✨ **Modern UX** with step-by-step workflow and visual feedback
+* 🎯 **Preview Mode** - see proposed changes before execution
+* Built with [Reflex](https://reflex.dev/) framework
+* Run with `reflex run` and access at http://localhost:3000
+* See [GUI_README.md](GUI_README.md) for complete documentation
 
 **[2024/09] v0.0.2**:
 * Featured by [Nexa Gallery](https://nexaai.com/gallery) and [Nexa SDK Cookbook](https://github.com/NexaAI/nexa-sdk/tree/main/examples)!
@@ -175,15 +205,39 @@ For detailed installation instructions of Nexa SDK for **CUDA** and **AMD GPU** 
 **Note:** If you encounter issues with any packages, install them individually:
 
 ```zsh
-pip install nexa Pillow pytesseract PyMuPDF python-docx
+pip install nexa Pillow pytesseract PyMuPDF python-docx reflex
 ```
 
-With the environment activated and dependencies installed, run the script using:
+With the environment activated and dependencies installed, you can run the application in two ways:
 
-### 6. Running the Script🎉
+### 6. Running the Application 🎉
+
+#### Option 1: Web GUI (Recommended) 🌐
+Run the modern web interface:
+```zsh
+reflex run
+```
+Then open http://localhost:3000 in your browser.
+
+**Features:**
+- Beautiful, intuitive interface
+- Visual step-by-step workflow
+- Preview before executing
+- Works on any device with a browser
+
+See [GUI_README.md](GUI_README.md) for detailed GUI documentation.
+
+#### Option 2: Command Line Interface 💻
+Run the traditional CLI:
 ```zsh
 python main.py
 ```
+
+**Features:**
+- Full terminal control
+- Perfect for automation
+- Lower resource usage
+- Scriptable workflows
 
 ## Notes
 
