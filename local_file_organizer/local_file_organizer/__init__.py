@@ -36,6 +36,13 @@ except ImportError as e:
 class FileOrganizerState(rx.State):
     """State management for the File Organizer application."""
     
+    # Mode display names mapping
+    MODE_NAMES = {
+        "content": "AI Content Analysis",
+        "date": "Date-based Organization", 
+        "type": "File Type Organization"
+    }
+    
     # UI State
     current_step: int = 0
     is_processing: bool = False
@@ -68,6 +75,11 @@ class FileOrganizerState(rx.State):
     status_message: str = ""
     error_message: str = ""
     
+    @rx.var
+    def organization_mode_display(self) -> str:
+        """Get display name for organization mode."""
+        return self.MODE_NAMES.get(self.organization_mode, self.organization_mode)
+    
     def set_input_path(self, path: str):
         """Set and validate input path."""
         self.input_path = path
@@ -94,12 +106,7 @@ class FileOrganizerState(rx.State):
     def set_organization_mode(self, mode: str):
         """Set the organization mode."""
         self.organization_mode = mode
-        mode_names = {
-            "content": "AI Content Analysis",
-            "date": "Date-based Organization", 
-            "type": "File Type Organization"
-        }
-        self.status_message = f"✓ Selected: {mode_names.get(mode, mode)}"
+        self.status_message = f"✓ Selected: {self.MODE_NAMES.get(mode, mode)}"
     
     def toggle_silent_mode(self):
         """Toggle silent mode."""
@@ -878,7 +885,7 @@ def step_3_preview() -> rx.Component:
         rx.grid(
             stat_card("Files to Organize", FileOrganizerState.total_files, "files", "#8b5cf6"),
             stat_card("Operations", FileOrganizerState.operations.length(), "git-branch", "#06b6d4"),
-            stat_card("Mode", FileOrganizerState.organization_mode.capitalize(), "settings", "#f59e0b"),
+            stat_card("Mode", FileOrganizerState.organization_mode_display, "settings", "#f59e0b"),
             columns=rx.breakpoints(initial="1", md="3"),
             spacing="4",
             width="100%",
