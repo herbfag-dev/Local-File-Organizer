@@ -21,3 +21,9 @@ venv/
 # Ignore example output files
 organized_folder/
 operation_log.txt
+
+# Reflex
+.web/
+assets/
+reflex.db
+alembic/
