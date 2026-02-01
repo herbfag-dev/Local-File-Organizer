@@ -51,6 +51,17 @@ After:
 
 ## Updates 🚀
 
+**[2026/02] v0.1.0**:
+* 🤖 **Copilot Mode**: Interactive AI assistant for custom file organization - chat with AI to define your own sorting rules!
+* 🎛️ **CLI Model Configuration**: Change AI models from command line with `--text-model` and `--image-model` flags
+* 📚 **Extended Format Support**: 
+  - Ebooks: `.epub`, `.mobi`, `.azw`, `.azw3`
+  - Audio: `.mp3`, `.wav`, `.flac`, `.m4a`, `.aac`, `.ogg`, `.wma`
+  - Video: `.mp4`, `.avi`, `.mkv`, `.mov`, `.wmv`, `.flv`, `.webm`
+* 🔍 **Duplicate File Detection**: Automatically find and manage duplicate files with customizable handling strategies
+* 📊 **Organizational Methodologies**: Apply proven frameworks like Johnny Decimal, PARA, ACCESS, Zettelkasten, and LATCH
+* 🐳 **Docker Support**: Easy deployment with Dockerfile and docker-compose
+
 **[2024/09] v0.0.2**:
 * Featured by [Nexa Gallery](https://nexaai.com/gallery) and [Nexa SDK Cookbook](https://github.com/NexaAI/nexa-sdk/tree/main/examples)!
 * Dry Run Mode: check sorting results before committing changes
@@ -66,15 +77,71 @@ Please update the project by deleting the original project folder and reinstalli
 
 ## Roadmap 📅
 
-- [ ] Copilot Mode: chat with AI to tell AI how you want to sort the file (ie. read and rename all the PDFs)
-- [ ] Change models with CLI 
-- [ ] ebook format support
-- [ ] audio file support
-- [ ] video file support
-- [ ] Implement best practices like Johnny Decimal
-- [ ] Check file duplication
-- [ ] Dockerfile for easier installation
+- [x] Copilot Mode: chat with AI to tell AI how you want to sort the file (ie. read and rename all the PDFs)
+- [x] Change models with CLI 
+- [x] ebook format support
+- [x] audio file support
+- [x] video file support
+- [x] Implement best practices like Johnny Decimal, PARA, ACCESS, Zettelkasten, LATCH
+- [x] Check file duplication
+- [x] Dockerfile for easier installation
 - [ ] People from [Nexa](https://github.com/NexaAI/nexa-sdk) is helping me to make executables for macOS, Linux and Windows
+
+## New Features 🎉
+
+### Copilot Mode
+Interactive AI assistant that allows you to chat with AI to define custom file organization rules. Simply describe how you want your files organized, and the AI will help you create and apply custom sorting rules.
+
+**Usage:**
+```bash
+python main.py
+# Select option 4: Copilot Mode
+```
+
+### CLI Model Configuration
+Configure AI models directly from the command line. Choose different text and image models based on your needs.
+
+**Usage:**
+```bash
+# List available models
+python main.py --list-models
+
+# Use custom models
+python main.py --text-model "Llama3.2-1B-Instruct:q4_0" --image-model "llava-phi-3-mini:q4_0"
+```
+
+### Extended Format Support
+Now supports additional file formats:
+- **Ebooks:** `.epub`, `.mobi`, `.azw`, `.azw3`
+- **Audio:** `.mp3`, `.wav`, `.flac`, `.m4a`, `.aac`, `.ogg`, `.wma`
+- **Video:** `.mp4`, `.avi`, `.mkv`, `.mov`, `.wmv`, `.flv`, `.webm`, `.mpeg`, `.mpg`
+
+### Duplicate File Detection
+Automatically detect and manage duplicate files during organization with three handling strategies:
+1. Keep first occurrence only
+2. Keep all duplicates with unique names
+3. Skip all duplicates
+
+### Organizational Methodologies
+Apply proven organizational frameworks to your file structure:
+- **Johnny Decimal:** Hierarchical organization with numeric categories (10.01, 20.05, etc.)
+- **PARA:** Projects, Areas, Resources, Archives - productivity-focused organization
+- **ACCESS:** Activities, Clients, Courses, Events, Systems, Sources
+- **Zettelkasten:** Knowledge management with timestamped atomic notes
+- **LATCH:** Location, Alphabet, Time, Category, Hierarchy
+
+### Docker Support
+Easy deployment and installation using Docker.
+
+**Usage:**
+```bash
+# Build and run with docker-compose
+docker-compose up
+
+# Or build manually
+docker build -t file-organizer .
+docker run -it -v ./input:/data/input -v ./output:/data/output file-organizer
+```
 
 ## What It Does 🔍
 
@@ -99,6 +166,11 @@ The best part? All AI processing happens 100% on your local device using the [Ne
 - **Spreadsheets:** `.xlsx`, `.csv`
 - **Presentations:** `.ppt`, `.pptx`
 - **PDFs:** `.pdf`
+- **Ebooks:** `.epub`, `.mobi`, `.azw`, `.azw3` (requires `ebooklib` and `beautifulsoup4`)
+- **Audio:** `.mp3`, `.wav`, `.flac`, `.m4a`, `.aac`, `.ogg`, `.wma`
+- **Video:** `.mp4`, `.avi`, `.mkv`, `.mov`, `.wmv`, `.flv`, `.webm`, `.mpeg`, `.mpg`
+
+**Note:** Audio and video files can be organized by type or date, but content-based organization (reading/analyzing content) is not available for multimedia files.
 
 ## Prerequisites 💻
 
@@ -175,7 +247,7 @@ For detailed installation instructions of Nexa SDK for **CUDA** and **AMD GPU** 
 **Note:** If you encounter issues with any packages, install them individually:
 
 ```zsh
-pip install nexa Pillow pytesseract PyMuPDF python-docx
+pip install nexa Pillow pytesseract PyMuPDF python-docx ebooklib beautifulsoup4
 ```
 
 With the environment activated and dependencies installed, run the script using:
@@ -184,6 +256,62 @@ With the environment activated and dependencies installed, run the script using:
 ```zsh
 python main.py
 ```
+
+## Docker Installation (Alternative) 🐳
+
+If you prefer using Docker for easier setup and isolation:
+
+### 1. Install Docker
+
+Download and install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop).
+
+### 2. Clone the Repository
+
+```bash
+git clone https://github.com/QiuYannnn/Local-File-Organizer.git
+cd Local-File-Organizer
+```
+
+### 3. Prepare Your Files
+
+Create `input` and `output` directories:
+
+```bash
+mkdir input output
+```
+
+Place the files you want to organize in the `input` directory.
+
+### 4. Run with Docker Compose
+
+```bash
+docker-compose up
+```
+
+This will:
+- Build the Docker image with all dependencies
+- Mount your input/output directories
+- Start the interactive file organizer
+- Cache AI models for faster subsequent runs
+
+### 5. Alternative: Manual Docker Build
+
+```bash
+# Build the image
+docker build -t file-organizer .
+
+# Run interactively
+docker run -it \
+  -v $(pwd)/input:/data/input \
+  -v $(pwd)/output:/data/output \
+  -v ~/.cache/nexa:/root/.cache/nexa \
+  file-organizer
+```
+
+**Docker Notes:**
+- Models are cached in `~/.cache/nexa` to avoid re-downloading
+- The container runs interactively, allowing you to respond to prompts
+- Your files remain on your local machine; Docker only provides the runtime environment
 
 ## Notes
 
