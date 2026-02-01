@@ -1,5 +1,6 @@
 import os
 import time
+import argparse
 
 from file_utils import (
     display_directory_tree,
@@ -23,6 +24,21 @@ from image_data_processing import (
     process_image_files
 )
 
+from duplicate_checker import (
+    find_duplicates,
+    handle_duplicates_in_operations
+)
+
+from copilot_mode import (
+    CopilotMode,
+    apply_copilot_rules
+)
+
+from organizational_methods import (
+    list_methods,
+    apply_organizational_method
+)
+
 from output_filter import filter_specific_output  # Import the context manager
 from nexa.gguf import NexaVLMInference, NexaTextInference  # Import model classes
 
@@ -37,13 +53,13 @@ def ensure_nltk_data():
 image_inference = None
 text_inference = None
 
-def initialize_models():
+def initialize_models(image_model_path=None, text_model_path=None):
     """Initialize the models if they haven't been initialized yet."""
     global image_inference, text_inference
     if image_inference is None or text_inference is None:
-        # Initialize the models
-        model_path = "llava-v1.6-vicuna-7b:q4_0"
-        model_path_text = "Llama3.2-3B-Instruct:q3_K_M"
+        # Initialize the models with default or provided paths
+        model_path = image_model_path or "llava-v1.6-vicuna-7b:q4_0"
+        model_path_text = text_model_path or "Llama3.2-3B-Instruct:q3_K_M"
 
         # Use the filter_specific_output context manager
         with filter_specific_output():
@@ -74,8 +90,9 @@ def initialize_models():
 
             )
         print("**----------------------------------------------**")
-        print("**       Image inference model initialized      **")
-        print("**       Text inference model initialized       **")
+        print(f"**   Image model: {model_path}")
+        print(f"**   Text model: {model_path_text}")
+        print("**   Models initialized successfully           **")
         print("**----------------------------------------------**")
 
 def simulate_directory_tree(operations, base_path):
@@ -118,10 +135,11 @@ def get_mode_selection():
     """Prompt the user to select a mode."""
     while True:
         print("Please choose the mode to organize your files:")
-        print("1. By Content")
+        print("1. By Content (AI-powered)")
         print("2. By Date")
         print("3. By Type")
-        response = input("Enter 1, 2, or 3 (or type '/exit' to exit): ").strip()
+        print("4. Copilot Mode (Interactive AI assistant)")
+        response = input("Enter 1, 2, 3, or 4 (or type '/exit' to exit): ").strip()
         if response == '/exit':
             print("Exiting program.")
             exit()
@@ -131,10 +149,72 @@ def get_mode_selection():
             return 'date'
         elif response == '3':
             return 'type'
+        elif response == '4':
+            return 'copilot'
         else:
-            print("Invalid selection. Please enter 1, 2, or 3. To exit, type '/exit'.")
+            print("Invalid selection. Please enter 1, 2, 3, or 4. To exit, type '/exit'.")
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Local File Organizer - AI-powered file organization',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python main.py
+  python main.py --text-model "Llama3.2-1B-Instruct:q4_0"
+  python main.py --image-model "llava-v1.6-vicuna-7b:q4_0" --text-model "Llama3.2-3B-Instruct:q3_K_M"
+  python main.py --list-models
+
+Available model examples:
+  Text models: Llama3.2-1B-Instruct:q4_0, Llama3.2-3B-Instruct:q3_K_M, gemma-2-2b-instruct:q4_0
+  Image models: llava-v1.6-vicuna-7b:q4_0, llava-phi-3-mini:q4_0
+        """
+    )
+    
+    parser.add_argument(
+        '--text-model',
+        type=str,
+        default=None,
+        help='Text inference model path (default: Llama3.2-3B-Instruct:q3_K_M)'
+    )
+    
+    parser.add_argument(
+        '--image-model',
+        type=str,
+        default=None,
+        help='Image inference model path (default: llava-v1.6-vicuna-7b:q4_0)'
+    )
+    
+    parser.add_argument(
+        '--list-models',
+        action='store_true',
+        help='List available model examples and exit'
+    )
+    
+    return parser.parse_args()
 
 def main():
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    # If --list-models flag is set, display model info and exit
+    if args.list_models:
+        print("=" * 60)
+        print("Available Model Examples")
+        print("=" * 60)
+        print("\nText Models (for text analysis and categorization):")
+        print("  - Llama3.2-1B-Instruct:q4_0 (smaller, faster)")
+        print("  - Llama3.2-3B-Instruct:q3_K_M (default, balanced)")
+        print("  - gemma-2-2b-instruct:q4_0 (alternative)")
+        print("\nImage Models (for image description and analysis):")
+        print("  - llava-v1.6-vicuna-7b:q4_0 (default)")
+        print("  - llava-phi-3-mini:q4_0 (smaller, faster)")
+        print("\nNote: Models will be downloaded automatically on first use.")
+        print("Visit https://nexaai.com for more models.")
+        print("=" * 60)
+        return
+    
     # Ensure NLTK data is downloaded efficiently and quietly
     ensure_nltk_data()
 
@@ -149,6 +229,59 @@ def main():
         log_file = 'operation_log.txt'
     else:
         log_file = None
+    
+    # Ask about duplicate checking
+    print("-" * 50)
+    print("**NOTE: Duplicate checking will detect files with identical content.")
+    check_duplicates = get_yes_no("Would you like to check for duplicate files? (yes/no): ")
+    if check_duplicates:
+        print("How should duplicates be handled?")
+        print("1. Keep first occurrence only")
+        print("2. Keep all duplicates with unique names")
+        print("3. Skip all duplicates")
+        while True:
+            dup_choice = input("Enter 1, 2, or 3: ").strip()
+            if dup_choice == '1':
+                duplicate_strategy = 'keep_first'
+                break
+            elif dup_choice == '2':
+                duplicate_strategy = 'keep_all'
+                break
+            elif dup_choice == '3':
+                duplicate_strategy = 'skip_duplicates'
+                break
+            else:
+                print("Invalid choice. Please enter 1, 2, or 3.")
+    else:
+        duplicate_strategy = None
+    
+    # Ask about organizational methodology
+    print("-" * 50)
+    print("**NOTE: You can apply organizational best practices to your file structure.")
+    use_org_method = get_yes_no("Would you like to use an organizational methodology? (yes/no): ")
+    if use_org_method:
+        print("\nAvailable organizational methods:")
+        methods = list_methods()
+        for i, method in enumerate(methods, 1):
+            print(f"{i}. {method['name']}: {method['description']}")
+        
+        while True:
+            org_choice = input(f"Enter 1-{len(methods)} (or 'skip' to proceed without): ").strip()
+            if org_choice.lower() == 'skip':
+                organizational_method = None
+                break
+            try:
+                choice_idx = int(org_choice) - 1
+                if 0 <= choice_idx < len(methods):
+                    organizational_method = methods[choice_idx]['key']
+                    print(f"Selected: {methods[choice_idx]['name']}")
+                    break
+                else:
+                    print(f"Invalid choice. Please enter 1-{len(methods)} or 'skip'.")
+            except ValueError:
+                print(f"Invalid input. Please enter 1-{len(methods)} or 'skip'.")
+    else:
+        organizational_method = None
 
     while True:
         # Paths configuration
@@ -219,7 +352,7 @@ def main():
                 # Initialize models once
                 if not silent_mode:
                     print("Checking if the model is already downloaded. If not, downloading it now.")
-                initialize_models()
+                initialize_models(image_model_path=args.image_model, text_model_path=args.text_model)
 
                 if not silent_mode:
                     print("*" * 50)
@@ -230,7 +363,14 @@ def main():
                 link_type_counts = {'hardlink': 0, 'symlink': 0}
 
                 # Separate files by type
-                image_files, text_files = separate_files_by_type(file_paths)
+                image_files, text_files, audio_files, video_files = separate_files_by_type(file_paths)
+                
+                # Note about audio/video files in content mode
+                if (audio_files or video_files) and not silent_mode:
+                    print("*" * 50)
+                    print("Note: Audio and video files will be organized by type/date only.")
+                    print("Content-based organization is not available for multimedia files.")
+                    print("*" * 50)
 
                 # Prepare text tuples for processing
                 text_tuples = []
@@ -272,9 +412,74 @@ def main():
             elif mode == 'type':
                 # Process files by type
                 operations = process_files_by_type(file_paths, output_path, dry_run=False, silent=silent_mode, log_file=log_file)
+            elif mode == 'copilot':
+                # Copilot mode - interactive AI assistant
+                # Initialize models for copilot mode
+                if not silent_mode:
+                    print("Initializing AI for copilot mode...")
+                initialize_models(image_model_path=args.image_model, text_model_path=args.text_model)
+                
+                # Create copilot instance
+                copilot = CopilotMode(text_inference, silent=silent_mode, log_file=log_file)
+                
+                # Run interactive session
+                custom_instructions = copilot.run_interactive_session(file_paths)
+                
+                if custom_instructions is None:
+                    # User exited copilot mode
+                    print("Copilot mode canceled.")
+                    continue  # Go back to mode selection
+                
+                # Apply custom rules
+                operations = apply_copilot_rules(custom_instructions, output_path)
             else:
                 print("Invalid mode selected.")
                 return
+
+            # Handle duplicate checking if enabled
+            if check_duplicates and duplicate_strategy:
+                if not silent_mode:
+                    print("-" * 50)
+                    print("Checking for duplicate files...")
+                
+                # Find duplicates among source files
+                source_files = [op['source'] for op in operations]
+                duplicates = find_duplicates(source_files, silent=silent_mode, log_file=log_file)
+                
+                # Apply duplicate handling strategy
+                if duplicates:
+                    operations = handle_duplicates_in_operations(
+                        operations, 
+                        duplicate_strategy=duplicate_strategy,
+                        silent=silent_mode,
+                        log_file=log_file
+                    )
+            
+            # Apply organizational methodology if selected
+            if organizational_method and mode not in ['copilot']:
+                if not silent_mode:
+                    print("-" * 50)
+                    print(f"Applying {organizational_method} organizational methodology...")
+                
+                # Extract source files and create metadata dict if available
+                source_files = [op['source'] for op in operations]
+                metadata_dict = {}
+                
+                # For content mode, we have metadata
+                if mode == 'content':
+                    for data in all_data:
+                        metadata_dict[data['file_path']] = {
+                            'foldername': data['foldername'],
+                            'filename': data['filename']
+                        }
+                
+                # Recompute operations with organizational method
+                operations = apply_organizational_method(
+                    source_files,
+                    output_path,
+                    organizational_method,
+                    metadata_dict=metadata_dict if metadata_dict else None
+                )
 
             # Simulate and display the proposed directory tree
             print("-" * 50)
