@@ -51,6 +51,16 @@ After:
 
 ## Updates 🚀
 
+**[2026/02] v0.1.0 - New Reflex Web GUI** 🎉:
+* **Brand new web-based dashboard** built with Reflex for a modern, seamless user experience
+* Beautiful purple gradient interface with intuitive card-based layout
+* Real-time progress monitoring with visual feedback
+* Interactive directory tree preview before executing operations
+* Settings panel for easy model configuration
+* Activity log with timestamped events
+* Supports all existing modes: Content (AI-powered), Date, and Type organization
+* Both GUI and CLI options available
+
 **[2024/09] v0.0.2**:
 * Featured by [Nexa Gallery](https://nexaai.com/gallery) and [Nexa SDK Cookbook](https://github.com/NexaAI/nexa-sdk/tree/main/examples)!
 * Dry Run Mode: check sorting results before committing changes
@@ -175,12 +185,41 @@ For detailed installation instructions of Nexa SDK for **CUDA** and **AMD GPU** 
 **Note:** If you encounter issues with any packages, install them individually:
 
 ```zsh
-pip install nexa Pillow pytesseract PyMuPDF python-docx
+pip install nexa Pillow pytesseract PyMuPDF python-docx reflex
 ```
 
-With the environment activated and dependencies installed, run the script using:
+With the environment activated and dependencies installed, you can run the application in two ways:
 
-### 6. Running the Script🎉
+### 6. Running the Application 🎉
+
+#### Option A: Web-Based GUI (Recommended)
+
+The new Reflex-based web interface provides a modern, user-friendly dashboard:
+
+```zsh
+python run_gui.py
+```
+
+Or directly with Reflex:
+
+```zsh
+reflex run
+```
+
+This will start the web application at `http://localhost:3000/` with the backend API at `http://localhost:8000/`.
+
+**Features of the Web GUI:**
+- 🎨 Modern, polished interface with intuitive navigation
+- 📁 Easy file path configuration with visual feedback
+- 🎯 Quick mode selection (Content/Date/Type)
+- ⚡ Real-time progress monitoring with detailed logs
+- 👁️ Preview of proposed directory structure before execution
+- ⚙️ Settings panel for model configuration
+
+#### Option B: Command-Line Interface
+
+For traditional CLI usage:
+
 ```zsh
 python main.py
 ```

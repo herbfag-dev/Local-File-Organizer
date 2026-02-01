@@ -1,3 +1,7 @@
+.states
+.web
+assets/external/
+*.db
 # Byte-compiled Python files
 __pycache__/
 *.py[cod]
@@ -21,3 +25,8 @@ venv/
 # Ignore example output files
 organized_folder/
 operation_log.txt
+
+# Reflex build artifacts
+.web/
+assets/
+reflex.db
